@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Neon Snake</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header-glow">
+        <h1>Neon Snake</h1>
+    </div>
+    <div id="game-outer">
+        <div id="game-container">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+            <div id="mobile-controls">
+                <button class="arrow up" aria-label="Up"></button>
+                <div>
+                    <button class="arrow left" aria-label="Left"></button>
+                    <button class="arrow down" aria-label="Down"></button>
+                    <button class="arrow right" aria-label="Right"></button>
+                </div>
+            </div>
+        </div>
+        <div id="scoreboard-glass">
+            <span>Score: <span id="score">0</span></span>
+            <span>High Score: <span id="highscore">0</span></span>
+            <span id="combo"></span>
+            <button id="pauseBtn" title="Pause/Resume">⏸</button>
+            <button id="restartBtn">Restart</button>
+        </div>
+    </div>
+    <footer>
+        <span>Created with 💙 Neon Vibes <a href="https://github.com/Lullucoder" target="_blank">@lullucoder</a></span>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
