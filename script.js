@@ -1,20 +1,31 @@
-// Neon Snake: Modern neon look, smooth classic movement, refined snake, glowing fruit, glass UI
+// Neon Snake: Mobile-friendly, responsive canvas, finger swipe controls
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const S = 24;
-const W = canvas.width;
-const H = canvas.height;
-const COLS = Math.floor(W/S);
-const ROWS = Math.floor(H/S);
+let S, W, H, COLS, ROWS;
 
-let snake, direction, nextDir, fruit, score, highScore, running, paused, tick, speed, baseSpeed, minSpeed, maxSpeed, grow, particles, gameOverAnim, combo, comboTimer, splashes, moveFrom, moveTo, moveProgress, keyBuffer, lastMoveTime, moveDuration, trail, fruitBounce;
-
-const NEON_SNAKE = [
-    "#00fff7","#47d1ff","#00e0c9","#0ff","#1affff","#a8fff9","#5ee9ff"
-];
+let snake, direction, nextDir, fruit, score, highScore, running, paused, tick, speed, baseSpeed, minSpeed, grow, particles, gameOverAnim, combo, comboTimer, splashes, moveFrom, moveTo, moveProgress, keyBuffer, lastMoveTime, moveDuration, fruitBounce;
+const NEON_SNAKE = ["#00fff7","#47d1ff","#00e0c9","#0ff","#1affff","#a8fff9","#5ee9ff"];
 const FRUIT_COLOR = "#ff2bff";
 
+// ===== Responsive sizing =====
+function resizeGame() {
+    // Use the smaller of viewport width or height for a square
+    let minDim = Math.min(window.innerWidth, window.innerHeight) * 0.92;
+    minDim = Math.min(600, minDim);
+    canvas.width = canvas.height = Math.floor(minDim);
+    W = H = canvas.width;
+    S = Math.floor(W / 25);
+    COLS = Math.floor(W/S);
+    ROWS = Math.floor(H/S);
+}
+resizeGame();
+window.addEventListener('resize', ()=>{
+    resizeGame();
+    resetGame();
+});
+
+// ===== Core logic below =====
 function loadHighScore() {
     highScore = Number(localStorage.getItem('snake_highscore')||0);
     document.getElementById('highscore').textContent = highScore;
@@ -34,7 +45,6 @@ function resetGame() {
     grow = 2;
     speed = baseSpeed = 11;
     minSpeed = 6;
-    maxSpeed = 20;
     paused = false;
     running = true;
     particles = [];
@@ -47,8 +57,7 @@ function resetGame() {
     moveProgress = 1;
     keyBuffer = [];
     lastMoveTime = performance.now();
-    moveDuration = 99; // ms per move
-    trail = [];
+    moveDuration = 99;
     fruitBounce = 0;
     placeFruit();
     updateScore();
@@ -80,14 +89,12 @@ function growParticle(x, y, color) {
     }
 }
 function drawNeonBG(t) {
-    // Subtle, slow-moving layered gradient
     let g = ctx.createLinearGradient(0,H/2,W,H/2);
     g.addColorStop(0, `hsl(${185+Math.sin(t/1700)*35}, 90%, 44%)`);
     g.addColorStop(0.47+0.13*Math.sin(t/2100), `hsl(${230+Math.cos(t/2300)*36}, 80%, 18%)`);
     g.addColorStop(1, `hsl(${320+Math.sin(t/1450)*24}, 90%, 17%)`);
     ctx.fillStyle = g;
     ctx.fillRect(0,0,W,H);
-    // Soft twinkle stars
     ctx.save();
     for(let i=0;i<18;i++) {
         let sx = (Math.sin(t/1700+i*12.3)*0.5+0.5)*W;
@@ -103,26 +110,19 @@ function drawNeonBG(t) {
     ctx.restore();
 }
 function drawSnake(t, interp) {
-    // Neon glowing rounded-rect snake, head is slightly bigger and more expressive
     for(let i=snake.length-1;i>=0;i--) {
         let seg = snake[i];
         let c = NEON_SNAKE[i%NEON_SNAKE.length];
         let from = moveFrom[i] || seg, to = moveTo[i] || seg;
         let x = from.x + (to.x - from.x) * interp;
         let y = from.y + (to.y - from.y) * interp;
-
         let width = (i===0) ? S*0.95 : S*0.82;
         let height = (i===0) ? S*0.82 : S*0.70;
         let radius = (i===0) ? S*0.36 : S*0.29;
-
         ctx.save();
         ctx.globalAlpha = 0.9 - i * 0.03;
-
-        // Glow
         ctx.shadowColor = c;
         ctx.shadowBlur = (i==0)?34:14;
-
-        // Main body (rounded rectangle)
         ctx.beginPath();
         roundRect(ctx, x*S+S/2-width/2, y*S+S/2-height/2, width, height, radius);
         let grad = ctx.createLinearGradient(x*S, y*S, x*S+S, y*S+S);
@@ -131,22 +131,18 @@ function drawSnake(t, interp) {
         grad.addColorStop(1, "#0ff2");
         ctx.fillStyle = grad;
         ctx.fill();
-
-        // Inner gloss
         if(i===0) {
             ctx.save();
-            ctx.globalAlpha = 0.19 + 0.2*Math.abs(Math.sin(t/110));
+            ctx.globalAlpha = 0.25 + 0.17*Math.abs(Math.sin(t/110));
             ctx.beginPath();
             roundRect(ctx, x*S+S/2-width/2+3, y*S+S/2-height/2+3, width-6, height-9, radius-4);
             ctx.fillStyle = "#fff2";
             ctx.shadowColor = c;
-            ctx.shadowBlur = 13;
+            ctx.shadowBlur = 9;
             ctx.fill();
             ctx.restore();
         }
         ctx.restore();
-
-        // Eyes on head
         if(i==0) {
             ctx.save();
             ctx.fillStyle="#fff";
@@ -155,8 +151,7 @@ function drawSnake(t, interp) {
             ctx.arc(ex-4, ey-5, 2.1, 0, 2*Math.PI);
             ctx.arc(ex+4, ey-5, 2.1, 0, 2*Math.PI);
             ctx.fill();
-            // Neon blue mask (smiling)
-            ctx.globalAlpha = 0.52;
+            ctx.globalAlpha = 0.5;
             ctx.beginPath();
             ctx.arc(x*S+S/2, y*S+S/2+4, 7, Math.PI*0.2, Math.PI*0.8);
             ctx.lineWidth = 2.8;
@@ -177,7 +172,7 @@ function roundRect(ctx, x, y, w, h, r) {
     ctx.closePath();
 }
 function drawFruit(t) {
-    fruitBounce += (Math.sin(t/480+fruit.x)*2.5 - fruitBounce)*0.1;
+    fruitBounce += (Math.sin(t/480+fruit.x)*2.5 - fruitBounce)*0.13;
     ctx.save();
     ctx.shadowColor = FRUIT_COLOR;
     ctx.shadowBlur = 24 + 8*Math.sin(t/500);
@@ -238,7 +233,6 @@ function render(now) {
     drawFruit(t);
     drawSnake(t, interp);
     drawSplashes(t);
-
     if(combo > 1 && comboTimer > 0) {
         document.getElementById('combo').textContent = "Combo x" + combo;
         document.getElementById('combo').style.color = combo > 2 ? "#ffee65" : "#ff2bff";
@@ -278,7 +272,6 @@ function render(now) {
     requestAnimationFrame(render);
 }
 function moveSnake() {
-    // Buffer controls: only apply one new direction per step
     if(keyBuffer.length) {
         let d = keyBuffer.shift();
         if((d.x!==-direction.x || d.y!==-direction.y) && (d.x!==direction.x || d.y!==direction.y)) {
@@ -291,7 +284,6 @@ function moveSnake() {
     if(newHead.x>=COLS) newHead.x=0;
     if(newHead.y<0) newHead.y=ROWS-1;
     if(newHead.y>=ROWS) newHead.y=0;
-    // Collision with self
     if(snake.some((s,i)=>i>0&&s.x===newHead.x&&s.y===newHead.y)) {
         running = false;
         gameOverAnim = 1;
@@ -302,7 +294,6 @@ function moveSnake() {
         return;
     }
     snake.unshift(newHead);
-    // Eat fruit
     if(newHead.x === fruit.x && newHead.y === fruit.y) {
         let points = combo;
         if(comboTimer > 0) combo = Math.min(combo + 1, 5);
@@ -359,6 +350,7 @@ function gameLoop(now) {
     advanceSplashes();
     setTimeout(()=>gameLoop(performance.now()), 14);
 }
+// === KEYBOARD & TOUCH ===
 function handleKey(e,down) {
     if(!down) return;
     let d;
@@ -370,14 +362,6 @@ function handleKey(e,down) {
     else return;
     keyBuffer.push(d);
     e.preventDefault();
-}
-function handleTouch(dir) {
-    let d;
-    if(dir==='left' && direction.x!==1) d={x:-1,y:0};
-    if(dir==='up' && direction.y!==1) d={x:0,y:-1};
-    if(dir==='right' && direction.x!==-1) d={x:1,y:0};
-    if(dir==='down' && direction.y!==-1) d={x:0,y:1};
-    if(d) keyBuffer.push(d);
 }
 function togglePause() {
     if(!running) return;
@@ -391,24 +375,43 @@ window.addEventListener('keydown', e=>{
 }, {passive:false});
 window.addEventListener('keyup', e=>{
 }, {passive:false});
-function isMobile() {
-    return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-}
-if(isMobile()) {
-    document.getElementById('mobile-controls').style.display = 'block';
-    document.querySelectorAll('#mobile-controls button').forEach(btn=>{
-        btn.addEventListener('touchstart', function(e){
-            e.preventDefault();
-            if(btn.classList.contains('up')) handleTouch('up');
-            if(btn.classList.contains('down')) handleTouch('down');
-            if(btn.classList.contains('left')) handleTouch('left');
-            if(btn.classList.contains('right')) handleTouch('right');
-        }, {passive:false});
-    });
-}
+
+// === SWIPE detection ===
+let touchStartX, touchStartY, touchMoved = false;
+canvas.addEventListener('touchstart', function(e){
+    if(e.touches.length!==1) return;
+    let t = e.touches[0];
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+    touchMoved = false;
+}, {passive:true});
+canvas.addEventListener('touchmove', function(e){
+    if(e.touches.length!==1) return;
+    let t = e.touches[0];
+    let dx = t.clientX - touchStartX;
+    let dy = t.clientY - touchStartY;
+    if(!touchMoved && Math.abs(dx)+Math.abs(dy) > 18) {
+        let dir;
+        if(Math.abs(dx) > Math.abs(dy)) {
+            dir = dx > 0 ? {x:1,y:0} : {x:-1,y:0};
+        } else {
+            dir = dy > 0 ? {x:0,y:1} : {x:0,y:-1};
+        }
+        // Only push if not opposite to current direction
+        if(dir && (dir.x!==-direction.x || dir.y!==-direction.y)) {
+            keyBuffer.push(dir);
+            touchMoved = true;
+        }
+    }
+}, {passive:true});
+canvas.addEventListener('touchend', function(e){
+    touchMoved = false;
+}, {passive:true});
+
 function startGame() {
     loadHighScore();
     tick=0;
+    resizeGame();
     resetGame();
     requestAnimationFrame(render);
     setTimeout(()=>gameLoop(performance.now()), 0);
